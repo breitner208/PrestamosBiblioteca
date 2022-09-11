@@ -3,7 +3,7 @@ import json
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-from gestionPrestamos.models import Libro
+from gestionPrestamos.models import Libro, Estudiante, prestamo, Devolucion
 from django.http import JsonResponse
 
 # Create your views here.
@@ -73,4 +73,45 @@ class LibroView(View):
             mensaje={"mensaje":"Libro Eliminado exitosamente."}
         else:
             mensaje={"mensaje":"No se encontro el Libro."}
+        return JsonResponse(mensaje)
+
+class prestamoView(View):
+
+    @method_decorator(csrf_exempt)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self,request):
+        data=json.loads(request.body)
+        try:
+            lib=Libro.objects.get(Isbn=data["libro"])
+            est=Estudiante.objects.get(documento=data["documento"])
+            pres=prestamo.objects.create(estudiante=est,libro=lib)
+            pres.save()
+            mensaje={"mensaje":"Prestamo Registrado."}
+        except Libro.DoesNotExist:
+            mensaje={"mensaje":"El libro no existe."}
+        except Estudiante.DoesNotExist:
+            mensaje={"mensaje":"El estudiante no existe."}
+
+        return JsonResponse(mensaje)
+
+class DevolucionView(View):
+
+    @method_decorator(csrf_exempt)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
+    def post (self, request):
+        data=json.loads(request.body)
+        try:
+            pres=prestamo.objects.get(id=data["prestamo"])
+            dev=Devolucion.objects.create(prestamo=pres)
+            dev.save()
+            mensaje={"mensaje":"Devolucion Registrada."}
+        except Libro.DoesNotExist:
+            mensaje={"mensaje":"Prestamo no existe."}
+        except Estudiante.DoesNotExist:
+            mensaje={"mensaje":"ya existe una devolucion para este prestamo."}
+
         return JsonResponse(mensaje)
